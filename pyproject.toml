@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel", "build>=1.2.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flowfoundry"
+version = "0.0.1"
+description = "FlowFoundry: a cloud-agnostic agentic workflow core for LangGraph/LangChain."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "Apache-2.0"}
+authors = [{name="Mandar Parab"}]
+keywords = ["agentic-ai", "langgraph", "rag", "framework", "llm"]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+  "pydantic>=2.7",
+  "pyyaml>=6.0.1",
+]
+
+[project.optional-dependencies]
+langgraph = ["langgraph>=0.2.0", "langchain>=0.2.15"]
+dev = ["pytest>=8.2", "pytest-cov", "ruff>=0.5", "mypy>=1.10", "pre-commit>=3.7", "build>=1.2.1", "twine>=5.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
