@@ -1,0 +1,17 @@
+start: retrieve
+nodes:
+  - id: retrieve
+    type: strategy.retrieve
+    params: { name: chroma_query, path: .ff_chroma, collection: docs, k: 8 }
+  - id: rerank
+    type: strategy.rerank
+    params: { name: bm25_preselect, top_k: 8 }
+  - id: prompt
+    type: prompt.rag
+  - id: answer
+    type: llm.chat
+    params: { model: gpt-4o-mini, provider: openai }
+edges:
+  - { source: retrieve, target: rerank }
+  - { source: rerank, target: prompt }
+  - { source: prompt, target: answer }

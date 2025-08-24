@@ -1,0 +1,21 @@
+start: retrieve
+nodes:
+  - id: retrieve
+    type: strategy.retrieve
+    params: { name: chroma_query, path: .ff_chroma, collection: docs, k: 20 }
+  - id: bm25
+    type: strategy.rerank
+    params: { name: bm25_preselect, top_k: 20 }
+  - id: ce
+    type: strategy.rerank
+    params: { name: cross_encoder, model: cross-encoder/ms-marco-MiniLM-L-6-v2, top_k: 5 }
+  - id: prompt
+    type: prompt.rag
+  - id: answer
+    type: llm.chat
+    params: { model: gpt-4o-mini, provider: openai }
+edges:
+  - { source: retrieve, target: bm25 }
+  - { source: bm25, target: ce }
+  - { source: ce, target: prompt }
+  - { source: prompt, target: answer }

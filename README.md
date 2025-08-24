@@ -11,14 +11,21 @@
 
 ## Install
 ```bash
-pip install flowfoundry
+pip install flowfoundry           # core
+pip install "flowfoundry[rag]"    # + Chroma & sentence-transformers
+pip install "flowfoundry[rerank]" # + CrossEncoder & BM25
 ```
 
-## Quickstart
+## Run a local RAG 
+```bash
+flowfoundry run examples/ingestion.yaml
+flowfoundry run examples/rag_local.yaml --state '{"query":"What does the doc say about X?"}'
+```
+### Extend with a strategy
 ```python
-from flowfoundry import ping
-from flowfoundry.hello import hello
+from flowfoundry.strategies import register_strategy
 
-print(ping())           # "flowfoundry: ok"
-print(hello("dev"))     # "hello, dev!"
+@register_strategy("chunking", "my_smart_chunker")
+def my_smart_chunker(text: str, *, doc_id: str = "doc"):
+    return [{"doc": doc_id, "text": text}]
 ```

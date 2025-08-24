@@ -1,0 +1,14 @@
+start: load
+nodes:
+  - id: load
+    type: io.pdf_load
+    params: { path: ./docs/sample.pdf }
+  - id: chunk
+    type: strategy.chunking
+    params: { name: recursive, size: 900, overlap: 120 }
+  - id: upsert
+    type: strategy.indexing
+    params: { name: chroma_upsert, path: .ff_chroma, collection: docs }
+edges:
+  - { source: load, target: chunk }
+  - { source: chunk, target: upsert }
