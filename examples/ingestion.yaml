@@ -2,7 +2,7 @@ start: load
 nodes:
   - id: load
     type: io.pdf_load
-    params: { path: ./docs/sample.pdf }
+    params: { path: pkg:sample.pdf }  # <— uses packaged asset if available
   - id: chunk
     type: strategy.chunking
     params: { name: recursive, size: 900, overlap: 120 }

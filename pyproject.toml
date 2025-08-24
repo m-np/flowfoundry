@@ -30,6 +30,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# ...existing extras...
+openai = ["openai>=1.40"]
+llm-openai = ["langchain-openai>=0.1.20"]
 rag = [
   "chromadb>=0.5",
   "sentence-transformers>=3.0",
@@ -101,7 +104,6 @@ mypy_path = "src"
 warn_unused_ignores = true
 warn_return_any = true
 strict_optional = true
-ignore_missing_imports = false
 
 [[tool.mypy.overrides]]
 module = [
@@ -111,6 +113,8 @@ module = [
   "typer",
   "langgraph.*",
   "langchain.*",
+  "langchain_openai",
+  "openai",
   "langchain_text_splitters",
   "pypdf",
   "chromadb",

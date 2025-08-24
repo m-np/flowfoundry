@@ -10,7 +10,9 @@ nodes:
     type: prompt.rag
   - id: answer
     type: llm.chat
-    params: { model: gpt-4o-mini, provider: openai }
+    params:
+      provider: echo          # ← offline by default
+      model: gpt-4o-mini      # kept for parity; not used by echo
 edges:
   - { source: retrieve, target: rerank }
   - { source: rerank, target: prompt }

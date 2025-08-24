@@ -18,7 +18,7 @@ PKG := flowfoundry
 EXTRAS ?= dev,rag,rerank,qdrant
 
 # Default query for the rag-local example
-QUERY ?= "Summarize the refund policy."
+QUERY ?= "Summarize the economic growth."
 
 # ---- Helpers --------------------------------------------------------------
 
@@ -45,27 +45,6 @@ precommit-install: ## Install pre-commit hooks
 .PHONY: precommit
 precommit: ## Run all pre-commit hooks on all files
 	pre-commit run -a
-
-# ---- Code quality ---------------------------------------------------------
-
-.PHONY: lint
-lint: ## Lint with ruff
-	ruff check .
-
-.PHONY: fmt
-fmt: ## Format with ruff-format
-	ruff format .
-
-.PHONY: fmt-check
-fmt-check: ## Check formatting (no changes)
-	ruff format --check .
-
-.PHONY: type
-type: ## Type-check with mypy
-	mypy src tests
-
-.PHONY: qa
-qa: lint fmt-check type ## Lint + format check + type check
 
 # ---- Tests ----------------------------------------------------------------
 
@@ -117,8 +96,3 @@ rag-local: ## Run examples/rag_local.yaml with QUERY (override with: make rag-lo
 .PHONY: rag-agentic
 rag-agentic: ## Run examples/rag_agentic.yaml with QUERY
 	$(PY) -m flowfoundry.cli run examples/rag_agentic.yaml --state '{"query": $(QUERY)}'
-
-# ---- Meta -----------------------------------------------------------------
-
-.PHONY: all
-all: qa test ## Run quality gates and tests

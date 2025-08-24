@@ -1,11 +1,23 @@
 from __future__ import annotations
 from langgraph.graph import StateGraph
 from ..config import WorkflowSpec
-from ..registry import registries
+from ..registry import registries, register_entrypoints
 from ..exceptions import FFConfigError
 
 
+def _ensure_builtins_loaded() -> None:
+    # Importing functional registers strategies via decorators
+    from .. import functional  # noqa: F401
+
+    # Import nodes to register @register_node classes
+    from ..nodes import io_pdf, prompt, llm_chat, strategy_nodes  # noqa: F401
+
+
 def compile_workflow(spec: WorkflowSpec):
+    # Make sure entry points and built-ins are loaded
+    register_entrypoints()
+    _ensure_builtins_loaded()
+
     g = StateGraph(dict)
     node_objs = {}
 

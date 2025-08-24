@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional
 from ...strategies.registry import register_strategy
 
-# Optional dependency, keep runtime fallback without type ignores
+# Optional dependency with graceful fallback
 CrossEncoder: Optional[Any]
 try:
     from sentence_transformers import CrossEncoder as _CrossEncoder
@@ -14,12 +14,23 @@ except Exception:
 
 @register_strategy("rerank", "cross_encoder")
 def cross_encoder(
-    model: str, query: str, hits: List[Dict], top_k: int | None = None
+    query: str,
+    hits: List[Dict],
+    *,
+    model: str,
+    top_k: int | None = None,
 ) -> List[Dict]:
-    ce_cls = CrossEncoder
-    if ce_cls is None:
+    """
+    Contract: (query, hits, **kwargs) -> hits
+    kwargs:
+      - model: sentence-transformers cross-encoder name
+      - top_k: keep top_k results after scoring
+    """
+    if CrossEncoder is None:
+        # Dependency missing -> no-op, preserve pipeline
         return hits
-    ce = ce_cls(model)  # ce_cls is Any at type-check time
+
+    ce = CrossEncoder(model)
     pairs = [(query, h.get("text", "")) for h in hits]
     scores = ce.predict(pairs)
     reranked = [dict(h, score=float(s)) for h, s in zip(hits, scores)]
