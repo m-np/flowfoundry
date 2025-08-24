@@ -8,16 +8,16 @@ version = "1.0.0"
 description = "FlowFoundry: a strategy-first, cloud-agnostic agentic workflow framework (LangGraph/LangChain)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Apache-2.0"}
-authors = [{name = "Mandar Parab"}]
-keywords = ["RAG","LangGraph","LangChain","agents","LLM","framework"]
+license = { text = "Apache-2.0" }
+authors = [{ name = "Mandar Parab" }]
+keywords = ["RAG", "LangGraph", "LangChain", "agents", "LLM", "framework"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: Apache Software License",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-# keep core light
+# Core deps kept lean; providers live in extras
 dependencies = [
   "pydantic>=2.7",
   "pyyaml>=6.0",
@@ -30,30 +30,62 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-rag = ["chromadb>=0.5", "sentence-transformers>=3.0"]
-search = ["duckduckgo-search>=5.3", "tavily-python>=0.3"]
-rerank = ["sentence-transformers>=3.0", "rank-bm25>=0.2"]
-qdrant = ["qdrant-client>=1.9"]
+rag = [
+  "chromadb>=0.5",
+  "sentence-transformers>=3.0",
+]
+search = [
+  "duckduckgo-search>=5.3",
+  "tavily-python>=0.3",
+]
+rerank = [
+  "sentence-transformers>=3.0",
+  "rank-bm25>=0.2",
+]
+qdrant = [
+  "qdrant-client>=1.9",
+]
 dev = [
   "pytest>=8.2",
   "pytest-cov>=5.0",
   "mypy>=1.11",
   "ruff>=0.5",
   "black>=24.8",
-  "types-PyYAML>=6.0.12.20240808",  # ← add this
+  "types-PyYAML>=6.0.12.20240808",
 ]
 
 [project.scripts]
 flowfoundry = "flowfoundry.cli:app"
 
-[project.entry-points]
-flowfoundry.nodes = { }
-flowfoundry.memories = { }
-flowfoundry.workflows = { }
-flowfoundry.models = { }
-flowfoundry.strategies.chunking = { }
-flowfoundry.strategies.indexing = { }
-flowfoundry.strategies.rerank = { }
+# -------- Entry points (plugin discovery) --------
+# Quoted group names + "name" = "module:object" strings
+
+[project.entry-points."flowfoundry.nodes"]
+"io.pdf_load"       = "flowfoundry.nodes.io_pdf:PdfLoadNode"
+"prompt.rag"        = "flowfoundry.nodes.prompt:RagPromptNode"
+"llm.chat"          = "flowfoundry.nodes.llm_chat:LLMChatNode"
+"strategy.chunking" = "flowfoundry.nodes.strategy_nodes:ChunkingStrategyNode"
+"strategy.indexing" = "flowfoundry.nodes.strategy_nodes:IndexingStrategyNode"
+"strategy.retrieve" = "flowfoundry.nodes.strategy_nodes:RetrieveStrategyNode"
+"strategy.rerank"   = "flowfoundry.nodes.strategy_nodes:RerankStrategyNode"
+
+[project.entry-points."flowfoundry.strategies.chunking"]
+fixed     = "flowfoundry.functional.chunking.fixed:fixed"
+recursive = "flowfoundry.functional.chunking.recursive:recursive"
+hybrid    = "flowfoundry.functional.chunking.hybrid:hybrid"
+
+[project.entry-points."flowfoundry.strategies.indexing"]
+chroma_upsert = "flowfoundry.functional.indexing.chroma:chroma_upsert"
+chroma_query  = "flowfoundry.functional.indexing.chroma:chroma_query"
+qdrant_upsert = "flowfoundry.functional.indexing.qdrant:qdrant_upsert"
+qdrant_query  = "flowfoundry.functional.indexing.qdrant:qdrant_query"
+
+[project.entry-points."flowfoundry.strategies.rerank"]
+identity       = "flowfoundry.functional.rerank.identity:identity"
+bm25_preselect = "flowfoundry.functional.rerank.bm25:bm25_preselect"
+cross_encoder  = "flowfoundry.functional.rerank.cross_encoder:cross_encoder"
+
+# -------- Packaging / tools --------
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -62,14 +94,15 @@ where = ["src"]
 pythonpath = ["src"]
 addopts = "-q"
 
+# mypy: strict on your code; ignore types for optional heavy deps
 [tool.mypy]
 python_version = "3.10"
 mypy_path = "src"
 warn_unused_ignores = true
 warn_return_any = true
 strict_optional = true
+ignore_missing_imports = false
 
-# Silence missing stubs/imports for heavy/optional deps
 [[tool.mypy.overrides]]
 module = [
   "fastapi",
@@ -87,4 +120,3 @@ module = [
   "rank_bm25",
 ]
 ignore_missing_imports = true
-

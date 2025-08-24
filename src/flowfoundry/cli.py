@@ -40,12 +40,19 @@ def serve(host: str = "127.0.0.1", port: int = 8000):
 
 
 @app.command()
-def schema(out: Path | None = None):
-    """Print workflow JSON Schema (for IDEs)."""
+def schema(
+    out: Path = typer.Argument(..., help="Output path for the workflow JSON Schema"),
+):
+    """Write workflow JSON Schema to a file (positional OUT path)."""
     s = workflow_jsonschema()
     text = json.dumps(s, indent=2)
-    if out:
-        out.write_text(text)
-        typer.echo(f"Wrote schema to {out}")
-    else:
-        typer.echo(text)
+    out.write_text(text)
+    typer.echo(f"Wrote schema to {out}")
+
+
+def main() -> None:
+    app()
+
+
+if __name__ == "__main__":
+    main()
