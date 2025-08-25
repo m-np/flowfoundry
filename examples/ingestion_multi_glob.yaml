@@ -5,7 +5,7 @@ nodes:
     type: io.pdf_load
     params:
       paths:
-        - docs/**/*.pdf
+        - docs/samples/*.pdf
       recursive: true
       patterns: ["*.pdf", "*.txt", "*.md"]  # for directory inputs
   - id: chunk

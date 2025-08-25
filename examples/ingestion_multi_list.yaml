@@ -5,7 +5,9 @@ nodes:
     type: io.pdf_load
     params:
       paths:
-        - docs/policies/refund.pdf
+        - docs/samples/healthcare.pdf
+        - docs/samples/sample2.pdf
+        - docs/samples/sample3.pdf
   - id: chunk
     type: strategy.chunking
     params: { name: recursive, size: 900, overlap: 120 }
