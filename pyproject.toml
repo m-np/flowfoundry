@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "flowfoundry"
 version = "1.0.0"
 description = "FlowFoundry: a strategy-first, cloud-agnostic agentic workflow framework (LangGraph/LangChain)"
-readme = "README.md"
+readme = "README-pypi.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Mandar Parab" }]
