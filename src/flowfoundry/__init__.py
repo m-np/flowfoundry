@@ -24,6 +24,7 @@ from .functional import (
     rerank_cross_encoder,
     preselect_bm25,
 )
+from .utils import ping, hello
 
 # Explicit imports to satisfy Ruff (avoid F403)
 from .blocks import (
@@ -74,8 +75,7 @@ __all__ = [
     "Identity",
     "CrossEncoder",
     "BM25",
+    # utils
+    "ping",
+    "hello",
 ]
-
-
-def ping() -> str:
-    return "flowfoundry: ok"
