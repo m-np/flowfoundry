@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Dict, Protocol, Type
 
 
 class StrategyBlock:
@@ -22,9 +22,15 @@ class StrategyBlock:
         return f"{cname}({self._config})"
 
 
+# Protocol to describe the dynamically-created block classes to mypy:
+class BlockProtocol(Protocol):
+    def __init__(self, **config: Any) -> None: ...
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
 def make_block_class(
     name: str, fn: Callable[..., Any], doc: str | None = None
-) -> Type[StrategyBlock]:
+) -> Type[BlockProtocol]:
     class _Block(StrategyBlock):
         def __init__(self, **config: Any) -> None:
             super().__init__(fn, **config)
