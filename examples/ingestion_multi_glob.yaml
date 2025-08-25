@@ -1,0 +1,19 @@
+# examples/ingestion_multi_glob.yaml
+start: load
+nodes:
+  - id: load
+    type: io.pdf_load
+    params:
+      paths:
+        - docs/**/*.pdf
+      recursive: true
+      patterns: ["*.pdf", "*.txt", "*.md"]  # for directory inputs
+  - id: chunk
+    type: strategy.chunking
+    params: { name: recursive, size: 800, overlap: 100 }
+  - id: upsert
+    type: strategy.indexing
+    params: { name: chroma_upsert, path: .ff_chroma, collection: docs }
+edges:
+  - { source: load, target: chunk }
+  - { source: chunk, target: upsert }
