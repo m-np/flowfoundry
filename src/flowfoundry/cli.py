@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from . import __version__  # <-- use the version already exposed in __init__.py
+from . import __version__  # <-- add this
 from .config import load_workflow_yaml, WorkflowSpec
 from .graphs.builder import compile_workflow
 from .registry import register_entrypoints, registries
@@ -17,8 +17,9 @@ app = typer.Typer(add_completion=False, no_args_is_help=True)
 
 
 # ---- Global --version/-V flag (runs before any command) ----
-@app.callback()
+@app.callback(invoke_without_command=True)
 def _root(
+    ctx: typer.Context,
     version: bool = typer.Option(
         False,
         "--version",
@@ -29,6 +30,10 @@ def _root(
 ) -> None:
     if version:
         typer.echo(f"flowfoundry {__version__}")
+        raise typer.Exit()
+    # If no subcommand was provided, show help instead of "Missing command."
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
         raise typer.Exit()
 
 
