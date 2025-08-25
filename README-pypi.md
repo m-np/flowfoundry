@@ -31,6 +31,13 @@ pip install "flowfoundry[rag,search,rerank,qdrant,openai,llm-openai]"
 Extras include: chromadb, qdrant-client, sentence-transformers, rank-bm25, openai, etc.
 All examples run offline by default (echo LLM). Missing deps no-op gracefully.
 
+Sanity check:
+```python
+from flowfoundry import ping, hello
+print(ping())          # -> "flowfoundry: ok"
+print(hello("there"))  # -> "hello, there!"
+```
+
 ## Quickstart (Functional API)
 
 ```python
