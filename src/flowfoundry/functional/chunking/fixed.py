@@ -1,11 +1,8 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Union
+from typing import List, Union
 from copy import deepcopy
 
-from ...strategies.registry import register_strategy
-
-Chunk = Dict[str, Any]
-InDoc = Dict[str, Any]
+from ...utils import InDoc, Chunk, register_strategy
 
 
 def _fixed_split(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:

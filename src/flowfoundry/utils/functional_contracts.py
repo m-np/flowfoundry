@@ -1,7 +1,9 @@
 from typing import Protocol, Dict, Any, List, Union
 from pathlib import Path
 
-STRATEGY_CONTRACT_VERSION = "1.0"
+from .versions import __version__
+
+STRATEGY_CONTRACT_VERSION = __version__
 
 Chunk = Dict[str, Any]
 InDoc = Dict[str, Any]

@@ -1,12 +1,9 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Union
+from typing import List, Union
 from copy import deepcopy
 
-from ...strategies.registry import register_strategy
+from ...utils import InDoc, Chunk, register_strategy
 from .recursive import recursive
-
-Chunk = Dict[str, Any]
-InDoc = Dict[str, Any]
 
 
 @register_strategy("chunking", "hybrid")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Dict, Tuple, Any, Optional
-from ...strategies.registry import register_strategy
+from ...utils import register_strategy
 
 BM25Okapi: Optional[Any]
 try:

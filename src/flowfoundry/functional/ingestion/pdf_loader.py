@@ -3,11 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List, Union
 
-from ...strategies.registry import register_strategy
+from ...utils import register_strategy, FFIngestionError
 
 from langchain_community.document_loaders import PyPDFLoader
-
-from ...exceptions import FFIngestionError
 
 
 @register_strategy("ingestion", "pdf_loader")

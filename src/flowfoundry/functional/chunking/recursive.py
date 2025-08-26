@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import List, Dict, Optional, Any, cast, Union
+from typing import List, Optional, Any, cast, Union
 from copy import deepcopy
 
-from ...strategies.registry import register_strategy
+from ...utils import InDoc, Chunk, register_strategy
 from .fixed import fixed
 
 RecursiveCharacterTextSplitter: Optional[Any]
@@ -12,9 +12,6 @@ try:
     RecursiveCharacterTextSplitter = _RCTS
 except Exception:
     RecursiveCharacterTextSplitter = None
-
-Chunk = Dict[str, Any]
-InDoc = Dict[str, Any]
 
 
 def _chunk_text(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:

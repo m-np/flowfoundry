@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
-from ...strategies.registry import register_strategy
+from ...utils import register_strategy
 
 # Optional dependency with graceful fallback
 CrossEncoder: Optional[Any]
