@@ -16,3 +16,9 @@ class FFDependencyError(FFError):
 
 class FFExecutionError(FFError):
     pass
+
+
+class FFIngestionError(FFError):
+    """Raised when ingestion (e.g., file loading) fails."""
+
+    pass

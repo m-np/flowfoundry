@@ -25,6 +25,7 @@ dependencies = [
   "fastapi>=0.111",
   "uvicorn>=0.30",
   "langchain>=0.2",
+  "langchain-community>=0.3",
   "langgraph>=0.2",
   "pypdf>=4.2",
 ]
@@ -113,6 +114,7 @@ module = [
   "typer",
   "langgraph.*",
   "langchain.*",
+  "langchain_community.*",
   "langchain_openai",
   "openai",
   "langchain_text_splitters",

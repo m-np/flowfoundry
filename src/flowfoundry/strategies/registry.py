@@ -29,7 +29,7 @@ class StrategyRegistries:
 
     def load_entrypoints(self) -> None:
         eps = entry_points()
-        for family in ("chunking", "indexing", "rerank"):
+        for family in ("ingestion", "chunking", "indexing", "rerank"):
             for ep in eps.select(group=f"flowfoundry.strategies.{family}"):
                 self.register(family, ep.name, ep.load())
 

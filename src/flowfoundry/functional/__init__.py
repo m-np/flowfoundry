@@ -15,10 +15,13 @@ from .rerank import (
     bm25_preselect as preselect_bm25,
 )
 
+from .ingestion import pdf_loader
+
 __all__ = [
     "chunk_fixed",
     "chunk_recursive",
     "chunk_hybrid",
+    "pdf_loader",
     "index_chroma_upsert",
     "index_chroma_query",
     "index_qdrant_upsert",
