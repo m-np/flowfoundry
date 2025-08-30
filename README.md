@@ -20,17 +20,13 @@ Examples run offline with echo LLM. Optional extras no-op gracefully.
 ## Repository layout
 ```bash
 flowfoundry/
-├─ examples/                  # ready-to-run YAML + Python demos
+├─ examples/                  # ready-to-run Python demos
 ├─ src/flowfoundry/
-│  ├─ functional/             # core strategy functions (single source of truth)
-│  ├─ blocks/                 # wrappers for composition
-│  ├─ nodes/                  # registered node types (io, llm, prompt, strategy.*)
-│  ├─ graphs/                 # LangGraph compiler & helpers
-│  ├─ cli.py                  # Typer CLI (run/list/serve)
-│  ├─ api.py                  # FastAPI local service
-│  └─ assets/                 # bundled demo data
-├─ docs/                      # Sphinx docs
-├─ tests/                     # pytest suite
+│  ├─ functional/             # core strategy functions (chunk, index, rerank, compose)
+│  ├─ model/                  # LLM provider wrappers (openai, ollama, hf, langchain)
+│  ├─ utils/                  # registry, errors, helpers
+│  └─ cli.py                  # Typer CLI (auto-discovers functional strategies)
+├─ tests/                     # pytest functional tests
 ├─ pyproject.toml
 └─ Makefile
 ```
@@ -52,39 +48,49 @@ flowfoundry/
 ### Functional API
 
 ```python
-from flowfoundry.functional import chunk_recursive, index_chroma_upsert, index_chroma_query
+from flowfoundry.functional import (
+    chunk_recursive,
+    index_chroma_upsert,
+    index_chroma_query,
+)
 
-chunks = chunk_recursive("FlowFoundry example text", size=120, overlap=20, doc_id="demo")
+chunks = chunk_recursive("FlowFoundry example text", chunk_size=120, chunk_overlap=20, doc_id="demo")
 index_chroma_upsert(chunks, path=".ff_chroma", collection="docs")
 hits = index_chroma_query("What is FlowFoundry?", path=".ff_chroma", collection="docs", k=5)
 ```
 
-### Blocks
-```python
-from flowfoundry.blocks import Recursive, ChromaUpsert, ChromaQuery
+### CLI
 
-chunks = Recursive(size=120, overlap=20)(text="Some text", doc_id="demo")
-ChromaUpsert(path=".ff_chroma", collection="docs")(chunks=chunks)
-hits = ChromaQuery(path=".ff_chroma", collection="docs", k=5)(query="demo?")
+Every registered function is available automatically:
+```bash
+# list all available strategies
+flowfoundry list
+
+# run a strategy by family/name
+flowfoundry call chunking fixed --kwargs '{"data":"hello world","chunk_size":5}'
+```
+Or use subcommands (auto-generated per family):
+```bash
+flowfoundry chunking fixed --kwargs '{"data":"hello world","chunk_size":5}'
+flowfoundry indexing chroma_query --kwargs '{"q":"budget","path":".ff_chroma","collection":"docs"}'
 ```
 
-### YAML + CLI
-```yaml
-start: retrieve
-nodes:
-  - id: retrieve
-    type: strategy.retrieve
-    params: { name: chroma_query, path: .ff_chroma, collection: docs, k: 8 }
-  - id: answer
-    type: llm.chat
-    params: { provider: echo }
-edges:
-  - { source: retrieve, target: answer }
+Ready-to-run Python scripts are in examples/python/:
 
-```
+01_load_chunk_index.py – load PDFs, chunk, index into Chroma
+
+02_query_rerank.py – query and rerank hits
+
+03_compose_openai.py – retrieve + answer with OpenAI
+
+04_compose_ollama.py – same but using local Ollama
+
+06_pipeline_end_to_end.py – full pipeline in one script
+
+
 Run:
 ```bash
-flowfoundry run examples/rag_local.yaml --state '{"query":"Hello!"}'
+python examples/python/01_load_chunk_index.py
 ```
 
 ## Development

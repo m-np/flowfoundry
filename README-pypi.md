@@ -46,7 +46,7 @@ from flowfoundry.functional import (
 )
 
 text   = "FlowFoundry lets you mix strategies to build RAG."
-chunks = chunk_recursive(text, size=120, overlap=20, doc_id="demo")
+chunks = chunk_recursive(text, chunk_size=120, chunk_overlap=20, doc_id="demo")
 
 # Index & query (requires chromadb extra)
 index_chroma_upsert(chunks, path=".ff_chroma", collection="docs")
@@ -58,31 +58,20 @@ hits = preselect_bm25("What is FlowFoundry?", hits, top_k=5)
 print(hits[0]["text"])
 ```
 
-### CLI + YAML
+### CLI
 
-```python
-start: retrieve
-nodes:
-  - id: retrieve
-    type: strategy.retrieve
-    params: { name: chroma_query, path: .ff_chroma, collection: docs, k: 8 }
-  - id: rerank
-    type: strategy.rerank
-    params: { name: bm25_preselect, top_k: 8 }
-  - id: prompt
-    type: prompt.rag
-  - id: answer
-    type: llm.chat
-    params: { provider: echo, model: gpt-4o-mini }
-edges:
-  - { source: retrieve, target: rerank }
-  - { source: rerank,   target: prompt }
-  - { source: prompt,   target: answer }
-```
+All registered strategies are available via the flowfoundry CLI.
 
 Run:
 ```bash
-flowfoundry run rag_local.yaml --state '{"query":"Hello!"}'
+# list families and functions
+flowfoundry list
+
+# call a strategy directly
+flowfoundry chunking fixed --kwargs '{"data":"hello world","chunk_size":5}'
+
+# equivalent generic call
+flowfoundry call chunking fixed --kwargs '{"data":"hello world","chunk_size":5}'
 ```
 
 ## Functional API Reference
@@ -100,8 +89,8 @@ Available in `flowfoundry.functional`:
 | `chunk_hybrid`    | Hybrid splitter      | –          |
 
 ```python
-chunk_fixed(text, *, size=800, overlap=80, doc_id="doc") -> list[Chunk]
-chunk_recursive(text, *, size=800, overlap=80, doc_id="doc") -> list[Chunk]
+chunk_fixed(text, *, chunk_size=800, chunk_overlap=80, doc_id="doc") -> list[Chunk]
+chunk_recursive(text, *, chunk_size=800, chunk_overlap=80, doc_id="doc") -> list[Chunk]
 chunk_hybrid(text, **kwargs) -> list[Chunk]
 ```
 
@@ -116,20 +105,7 @@ chunk_hybrid(text, **kwargs) -> list[Chunk]
 
 ```python
 index_chroma_upsert(chunks, *, path=".ff_chroma", collection="docs") -> str
-index_chroma_query(query, *, k=5, path, collection) -> list[Hit]
-```
----
-
-### Indexing (Qdrant)
-
-| Function              | Purpose              | Extra deps |
-|-----------------------|----------------------|------------|
-| `index_qdrant_upsert` | Upsert chunks into Qdrant  | `qdrant-client` |
-| `index_qdrant_query`  | Query Qdrant   | `qdrant-client` |
-
-```python
-index_qdrant_upsert(chunks, *, url, collection, dim=None) -> str
-index_qdrant_query(query, *, url, collection, k=5, vector=None) -> list[Hit]
+index_chroma_query(query, *, path, collection, k=5) -> list[Hit]
 ```
 ---
 
@@ -142,7 +118,87 @@ index_qdrant_query(query, *, url, collection, k=5, vector=None) -> list[Hit]
 | `rerank_cross_encoder`    | Cross-encoder reranker      |`sentence-transformers` |
 
 ```python
-rerank_identity(query, hits) -> list[Hit]
+rerank_identity(query, hits, top_k=None) -> list[Hit]
 preselect_bm25(query, hits, top_k=20) -> list[Hit]
 rerank_cross_encoder(query, hits, *, model, top_k=None) -> list[Hit]
 ```
+
+### Composition (LLM Answering)
+
+| Function          | Purpose              | Providers supported | Extra deps |
+|-------------------|----------------------|------------|----------------------|
+| `compose_llm`     | Generate an answer from hits via an LLM  | openai, ollama, huggingface, langchain | provider-specific |
+
+```python
+compose_llm(
+    question: str,
+    hits: list[Hit],
+    *,
+    provider: str,        # "openai", "ollama", "huggingface", "langchain"
+    model: str,           # e.g. "gpt-4o-mini", "llama3:8b", "distilgpt2"
+    max_context_chars=6000,
+    max_tokens=512,
+    reuse_provider=True,
+    **provider_kwargs     # api_key, host, backend, device, etc.
+) -> str
+```
+
+Example Code:
+```python
+from flowfoundry import index_chroma_query, preselect_bm25, compose_llm
+
+question = "What is people's budget?"
+hits = index_chroma_query(question, path=".ff_chroma", collection="docs", k=8)
+hits = preselect_bm25(question, hits, top_k=5)
+
+# OpenAI provider
+answer = compose_llm(
+    question, hits,
+    provider="openai",
+    model="gpt-4o-mini",
+    max_tokens=400,
+)
+print(answer)
+
+# Ollama provider
+answer = compose_llm(
+    question, hits,
+    provider="ollama",
+    model="llama3:8b",
+    host="http://localhost:11434",
+    max_tokens=400,
+)
+print(answer)
+
+# HuggingFace local transformers
+answer = compose_llm(
+    question, hits,
+    provider="huggingface",
+    model="distilgpt2",
+    max_tokens=200,
+)
+print(answer)
+```
+
+Example (CLI)
+
+Save retrieval hits into JSON first, then pass them to compose_llm:
+
+Step 1: query (Chroma)
+```bash
+flowfoundry indexing chroma_query \
+  --kwargs '{"query":"What is people'\''s budget?","path":".ff_chroma","collection":"docs","k":8}' > hits.json
+```
+
+Step 2: rerank (BM25)
+```bash
+ flowfoundry rerank bm25_preselect \
+  --kwargs "{\"query\":\"What is people's budget?\",\"hits\":$(cat hits.json),\"top_k\":5}" > hits_top5.json
+```
+
+Step 3: compose answer with OpenAI
+``` bash
+export OPENAI_API_KEY=...
+flowfoundry compose llm \
+  --kwargs "{\"question\":\"What is people's budget?\",\"hits\":$(cat hits_top5.json),\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"max_tokens\":400}"
+```1
