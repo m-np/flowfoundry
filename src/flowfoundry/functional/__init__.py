@@ -15,6 +15,8 @@ from .rerank import (
 
 from .ingestion import pdf_loader
 
+from .composer import compose_llm
+
 __all__ = [
     "chunk_fixed",
     "chunk_recursive",
@@ -25,4 +27,5 @@ __all__ = [
     "rerank_identity",
     "rerank_cross_encoder",
     "preselect_bm25",
+    "compose_llm",
 ]

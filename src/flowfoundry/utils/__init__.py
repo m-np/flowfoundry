@@ -23,12 +23,24 @@ from .functional_contracts import (
     RerankFn,
     Chunk,
     InDoc,
+    ComposeFn,
 )
 
 from .functional_registry import (
     strategies,
     register_strategy,
     strategy_contract_version,
+)
+
+from .llm_registry import (
+    register_llm_provider,
+    get_llm_provider,
+    get_llm_cached,
+    clear_llm_cache,
+)
+
+from .llm_contracts import (
+    LLMProvider,
 )
 
 from .versions import __version__
@@ -66,10 +78,18 @@ __all__ = [
     "RerankFn",
     "Chunk",
     "InDoc",
+    "ComposeFn",
     # Functional Registry
     "strategies",
     "register_strategy",
     "strategy_contract_version",
+    # LLM Registry
+    "register_llm_provider",
+    "get_llm_provider",
+    "get_llm_cached",
+    "clear_llm_cache",
+    # LLM Contracts
+    "LLMProvider",
     # Version
     "__version__",
     # Helpers

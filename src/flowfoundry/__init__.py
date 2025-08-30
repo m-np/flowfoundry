@@ -13,7 +13,11 @@ from .functional import (
     rerank_identity,
     rerank_cross_encoder,
     preselect_bm25,
+    compose_llm,
+    pdf_loader,
 )
+
+from .model import HFProvider, OpenAIProvider, OllamaProvider, LangChainProvider
 
 __all__ = [
     "__version__",
@@ -26,6 +30,13 @@ __all__ = [
     "rerank_identity",
     "rerank_cross_encoder",
     "preselect_bm25",
+    "compose_llm",
+    "pdf_loader",
+    # providers
+    "HFProvider",
+    "OpenAIProvider",
+    "OllamaProvider",
+    "LangChainProvider",
     # utils
     "ping",
     "hello",

@@ -1,24 +1,26 @@
+# src/flowfoundry/utils/exceptions.py
+from __future__ import annotations
+
+
 class FFError(Exception):
-    pass
+    """Base class for all FlowFoundry-specific exceptions."""
 
 
 class FFConfigError(FFError):
-    pass
+    """Raised when there is a configuration issue."""
 
 
 class FFRegistryError(FFError):
-    pass
+    """Raised when a registry lookup fails."""
 
 
 class FFDependencyError(FFError):
-    pass
+    """Raised when a required dependency is missing."""
 
 
 class FFExecutionError(FFError):
-    pass
+    """Raised when execution of a strategy or step fails."""
 
 
 class FFIngestionError(FFError):
-    """Raised when ingestion (e.g., file loading) fails."""
-
-    pass
+    """Raised when ingestion of input data fails."""
