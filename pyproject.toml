@@ -89,7 +89,7 @@ module = [
   "pypdf", "chromadb",
   "qdrant_client", "qdrant_client.http.models",
   "sentence_transformers", "transformers",   
-  "rank_bm25", "requests",                   
+  "rank_bm25", "requests", "pytest"                   
 ]
 ignore_missing_imports = true
 
