@@ -93,6 +93,22 @@ Run:
 python examples/python/01_load_chunk_index.py
 ```
 
+### YAML Plans (no-code pipelines)
+
+Run FlowFoundry strategies from a declarative YAML “plan”—no Python needed.
+```bash 
+# basic usage
+flowfoundry run path/to/plan.yaml
+
+# debug: print intermediate step outputs too
+flowfoundry run path/to/plan.yaml --print-steps
+```
+
+Example Script
+```bash
+flowfoundry run examples/yaml/rag_sample.yaml
+```
+
 ## Development
 ```bash
 make dev      # editable install + extras

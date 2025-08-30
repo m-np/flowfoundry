@@ -4,17 +4,32 @@ from __future__ import annotations
 import json
 import inspect
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 import typer
 
 from flowfoundry.utils.functional_registry import strategies
 from flowfoundry.utils.functional_autodiscover import import_all_functional
 
+# --- Plan/YAML runner (optional import) ---------------------------------------
+run_yaml_file: Optional[Callable[[str], Dict[str, Any]]] = None
+_plan_runner_available = False
+try:
+    # We import the "plans" runner but keep the variable name `run_yaml_file`
+    # for backward compatibility with earlier code/comments.
+    from flowfoundry.plans.runner import run_plan_file as _run_yaml_file
+
+    run_yaml_file = _run_yaml_file
+    _plan_runner_available = True
+except Exception:
+    # Leave `run_yaml_file` as None and `_plan_runner_available` as False
+    # so the CLI can show a friendly error when missing.
+    pass
+
 app = typer.Typer(help="FlowFoundry CLI — auto-discovered functional commands.")
 
 
-# -------- bootstrap registry --------
+# -------- bootstrap registry ---------------------------------------------------
 _imported = import_all_functional()  # import all flowfoundry.functional.* modules
 try:
     strategies.load_entrypoints()  # optional: third-party plugins via entry points
@@ -23,7 +38,7 @@ except Exception:
     pass
 
 
-# -------- helpers --------
+# -------- helpers --------------------------------------------------------------
 def _coerce_kwargs(fn: Callable[..., Any], raw: Dict[str, Any]) -> Dict[str, Any]:
     """
     Best-effort coercion: matches incoming keys to function params.
@@ -31,7 +46,7 @@ def _coerce_kwargs(fn: Callable[..., Any], raw: Dict[str, Any]) -> Dict[str, Any
     """
     sig = inspect.signature(fn)
     out: Dict[str, Any] = {}
-    for name, param in sig.parameters.items():
+    for name in sig.parameters:
         if name in raw:
             out[name] = raw[name]
     return out
@@ -51,7 +66,7 @@ def _load_kwargs(kwargs: str | None, kwargs_file: str | None) -> Dict[str, Any]:
     return {}
 
 
-# -------- generic 'call' command (works for ANY registered function) --------
+# -------- generic 'call' command (works for ANY registered function) ----------
 @app.command("call")
 def call(
     family: str = typer.Argument(
@@ -91,7 +106,7 @@ def call(
         typer.echo(repr(result))
 
 
-# -------- auto-generate subcommands for each family/name --------
+# -------- auto-generate subcommands for each family/name -----------------------
 def _register_family_commands() -> None:
     """
     For every family and registered name, attach a subcommand:
@@ -104,7 +119,7 @@ def _register_family_commands() -> None:
         for name in sorted(strategies.list_names(family)):
             fn = strategies.get(family, name)
 
-            def _make_cmd(_fn: Callable[..., Any], _name: str):
+            def _make_cmd(_fn: Callable[..., Any], _name: str, _family: str):
                 def _cmd(
                     kwargs: str | None = typer.Option(
                         None, "--kwargs", help="JSON object string for parameters"
@@ -127,17 +142,43 @@ def _register_family_commands() -> None:
                     except TypeError:
                         typer.echo(repr(res))
 
-                _cmd.__name__ = f"{family}_{_name}_cmd"
-                _cmd.__doc__ = f"{family}:{_name}  ({_fn.__module__}.{_fn.__name__})"
+                _cmd.__name__ = f"{_family}_{_name}_cmd"
+                _cmd.__doc__ = f"{_family}:{_name}  ({_fn.__module__}.{_fn.__name__})"
                 return _cmd
 
-            sub.command(name)(_make_cmd(fn, name))
+            sub.command(name)(_make_cmd(fn, name, family))
 
 
 _register_family_commands()
 
 
-# -------- discovery/info utilities --------
+# -------- plan (YAML) runner command ------------------------------------------
+@app.command("run")
+def run_plan(
+    file: str = typer.Argument(..., help="Path to plan YAML"),
+    print_steps: bool = typer.Option(False, help="Print all step outputs as JSON"),
+    print_outputs: bool = typer.Option(False, help="Print outputs as JSON (default)"),
+):
+    """
+    Execute a FlowFoundry plan (YAML). Example:
+      flowfoundry run examples/yaml/rag_sample.yaml
+    """
+    if not _plan_runner_available or run_yaml_file is None:
+        raise typer.BadParameter(
+            "Plan runner unavailable. Ensure PyYAML is installed and flowfoundry.plans.runner exists."
+        )
+
+    # mypy-safe: guard ensures not-None here
+    assert run_yaml_file is not None
+    result = run_yaml_file(file)
+
+    if print_steps:
+        typer.echo(json.dumps(result["steps"], indent=2, ensure_ascii=False))
+    if print_outputs or (not print_steps and not print_outputs):
+        typer.echo(json.dumps(result["outputs"], indent=2, ensure_ascii=False))
+
+
+# -------- discovery/info utilities --------------------------------------------
 @app.command("list")
 def list_all():
     """List all families and names registered."""
@@ -153,5 +194,9 @@ def info():
     typer.echo(f"Families: {sorted(strategies.list_families())}")
 
 
-if __name__ == "__main__":
+def main():
     app()
+
+
+if __name__ == "__main__":
+    main()

@@ -19,6 +19,8 @@ from .functional import (
 
 from .model import HFProvider, OpenAIProvider, OllamaProvider, LangChainProvider
 
+from .plans import run_plan, run_plan_file, run_yaml_file
+
 __all__ = [
     "__version__",
     # functional (stable names)
@@ -40,4 +42,8 @@ __all__ = [
     # utils
     "ping",
     "hello",
+    # plans
+    "run_plan",
+    "run_plan_file",
+    "run_yaml_file",
 ]
