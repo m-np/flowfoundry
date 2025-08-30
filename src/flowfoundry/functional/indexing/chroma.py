@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional, cast
-from ...strategies.registry import register_strategy
-from ...exceptions import FFDependencyError
+from ...utils import register_strategy, FFDependencyError
 
 chromadb: Optional[Any]
 try:

@@ -1,80 +1,42 @@
-from .version import __version__
-from .registry import (
-    registries,
-    register_entrypoints,
-    register_node,
-    register_workflow,
-    register_memory,
-    register_model,
+from .utils import (
+    ping,
+    hello,
+    __version__,
 )
-from .strategies.registry import (
-    strategies,
-    register_strategy,
-    strategy_contract_version,
-)
+
 from .functional import (
     chunk_fixed,
     chunk_recursive,
     chunk_hybrid,
     index_chroma_upsert,
     index_chroma_query,
-    index_qdrant_upsert,
-    index_qdrant_query,
     rerank_identity,
     rerank_cross_encoder,
     preselect_bm25,
+    compose_llm,
+    pdf_loader,
 )
-from .utils import ping, hello
 
-# Explicit imports to satisfy Ruff (avoid F403)
-from .blocks import (
-    Fixed,
-    Recursive,
-    Hybrid,
-    ChromaUpsert,
-    ChromaQuery,
-    QdrantUpsert,
-    QdrantQuery,
-    Identity,
-    CrossEncoder,
-    BM25,
-)
+from .model import HFProvider, OpenAIProvider, OllamaProvider, LangChainProvider
 
 __all__ = [
     "__version__",
-    # registry
-    "registries",
-    "register_entrypoints",
-    "register_node",
-    "register_workflow",
-    "register_memory",
-    "register_model",
-    # strategies
-    "strategies",
-    "register_strategy",
-    "strategy_contract_version",
     # functional (stable names)
     "chunk_fixed",
     "chunk_recursive",
     "chunk_hybrid",
     "index_chroma_upsert",
     "index_chroma_query",
-    "index_qdrant_upsert",
-    "index_qdrant_query",
     "rerank_identity",
     "rerank_cross_encoder",
     "preselect_bm25",
-    # blocks (ergonomic wrappers)
-    "Fixed",
-    "Recursive",
-    "Hybrid",
-    "ChromaUpsert",
-    "ChromaQuery",
-    "QdrantUpsert",
-    "QdrantQuery",
-    "Identity",
-    "CrossEncoder",
-    "BM25",
+    "compose_llm",
+    "pdf_loader",
+    # providers
+    "HFProvider",
+    "OpenAIProvider",
+    "OllamaProvider",
+    "LangChainProvider",
     # utils
     "ping",
     "hello",

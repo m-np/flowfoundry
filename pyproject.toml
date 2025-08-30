@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "flowfoundry"
-version = "1.0.1"
+version = "1.1.0"
 description = "FlowFoundry: a strategy-first, cloud-agnostic agentic workflow framework (LangGraph/LangChain)"
 readme = "README-pypi.md"
 requires-python = ">=3.10"
@@ -12,8 +12,12 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "Mandar Parab" }]
 keywords = ["RAG", "LangGraph", "LangChain", "agents", "LLM", "framework"]
 classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
   "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
@@ -25,73 +29,44 @@ dependencies = [
   "fastapi>=0.111",
   "uvicorn>=0.30",
   "langchain>=0.2",
+  "langchain-community>=0.3",
   "langgraph>=0.2",
   "pypdf>=4.2",
+  "langchain-ollama>=0.1.20",
+  "accelerate>=1.10.1",
+  "sentencepiece>=0.2.1"
 ]
 
 [project.optional-dependencies]
 # ...existing extras...
-openai = ["openai>=1.40"]
+openai = ["openai>=1.40", "langchain-openai>=0.1.20"]
 llm-openai = ["langchain-openai>=0.1.20"]
-rag = [
-  "chromadb>=0.5",
-  "sentence-transformers>=3.0",
-]
-search = [
-  "duckduckgo-search>=5.3",
-  "tavily-python>=0.3",
-]
-rerank = [
-  "sentence-transformers>=3.0",
-  "rank-bm25>=0.2",
-]
-qdrant = [
-  "qdrant-client>=1.9",
-]
+rag = ["chromadb>=0.5", "sentence-transformers>=3.0"]
+search = ["duckduckgo-search>=5.3", "tavily-python>=0.3"]
+rerank = ["rank-bm25>=0.2", "sentence-transformers>=3.0"]
+qdrant = ["qdrant-client>=1.9"]
+api = ["fastapi>=0.111", "uvicorn>=0.30"]
 dev = [
-  "pytest>=8.2",
-  "pytest-cov>=5.0",
-  "mypy>=1.11",
-  "ruff>=0.5",
-  "black>=24.8",
-  "types-PyYAML>=6.0.12.20240808",
+  "pytest>=8.2", "pytest-cov>=5.0", "mypy>=1.11", "ruff>=0.5", "black>=24.8",
+  "types-PyYAML>=6.0.12.20240808", "build>=1.2", "twine>=5.1",
 ]
 
 [project.scripts]
+# (optional) keep a tiny CLI that only calls functional APIs
 flowfoundry = "flowfoundry.cli:app"
 
-# -------- Entry points (plugin discovery) --------
-# Quoted group names + "name" = "module:object" strings
+# ——— REMOVED: all [project.entry-points."flowfoundry.*"] blocks ———
 
-[project.entry-points."flowfoundry.nodes"]
-"io.pdf_load"       = "flowfoundry.nodes.io_pdf:PdfLoadNode"
-"prompt.rag"        = "flowfoundry.nodes.prompt:RagPromptNode"
-"llm.chat"          = "flowfoundry.nodes.llm_chat:LLMChatNode"
-"strategy.chunking" = "flowfoundry.nodes.strategy_nodes:ChunkingStrategyNode"
-"strategy.indexing" = "flowfoundry.nodes.strategy_nodes:IndexingStrategyNode"
-"strategy.retrieve" = "flowfoundry.nodes.strategy_nodes:RetrieveStrategyNode"
-"strategy.rerank"   = "flowfoundry.nodes.strategy_nodes:RerankStrategyNode"
-
-[project.entry-points."flowfoundry.strategies.chunking"]
-fixed     = "flowfoundry.functional.chunking.fixed:fixed"
-recursive = "flowfoundry.functional.chunking.recursive:recursive"
-hybrid    = "flowfoundry.functional.chunking.hybrid:hybrid"
-
-[project.entry-points."flowfoundry.strategies.indexing"]
-chroma_upsert = "flowfoundry.functional.indexing.chroma:chroma_upsert"
-chroma_query  = "flowfoundry.functional.indexing.chroma:chroma_query"
-qdrant_upsert = "flowfoundry.functional.indexing.qdrant:qdrant_upsert"
-qdrant_query  = "flowfoundry.functional.indexing.qdrant:qdrant_query"
-
-[project.entry-points."flowfoundry.strategies.rerank"]
-identity       = "flowfoundry.functional.rerank.identity:identity"
-bm25_preselect = "flowfoundry.functional.rerank.bm25:bm25_preselect"
-cross_encoder  = "flowfoundry.functional.rerank.cross_encoder:cross_encoder"
-
-# -------- Packaging / tools --------
+[tool.setuptools]
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["flowfoundry*"]
+exclude = ["tests*", "examples*"]
+
+[tool.setuptools.package-data]
+"flowfoundry" = ["**/*.yaml", "**/*.yml", "**/*.txt", "**/*.json", "**/*.md"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -107,20 +82,19 @@ strict_optional = true
 
 [[tool.mypy.overrides]]
 module = [
-  "fastapi",
-  "fastapi.responses",
-  "uvicorn",
-  "typer",
-  "langgraph.*",
-  "langchain.*",
-  "langchain_openai",
-  "openai",
-  "langchain_text_splitters",
-  "pypdf",
-  "chromadb",
-  "qdrant_client",
-  "qdrant_client.http.models",
-  "sentence_transformers",
-  "rank_bm25",
+  "fastapi", "fastapi.responses", "uvicorn", "typer",
+  "langgraph.*", "langchain.*", "langchain_community.*",
+  "langchain_openai", "langchain_ollama",    
+  "openai", "langchain_text_splitters",
+  "pypdf", "chromadb",
+  "qdrant_client", "qdrant_client.http.models",
+  "sentence_transformers", "transformers",   
+  "rank_bm25", "requests", "pytest"                   
 ]
 ignore_missing_imports = true
+
+[project.urls]
+Homepage = "https://github.com/m-np/flowfoundry"
+Repository = "https://github.com/m-np/flowfoundry"
+Issues = "https://github.com/m-np/flowfoundry/issues"
+Documentation = "https://github.com/m-np/flowfoundry#readme"

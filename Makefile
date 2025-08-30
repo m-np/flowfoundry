@@ -1,44 +1,46 @@
-# FlowFoundry — developer Makefile
-# Usage examples:
+# FlowFoundry — developer Makefile (functional-only)
+# Usage:
 #   make help
-#   make dev                # install in editable mode with dev + providers extras
-#   make lint type test     # run static checks and tests
-#   make serve              # run local API server
-#   make ingest rag-local   # run example workflows
-#   make build              # build sdist/wheel
-#   make precommit          # run pre-commit hooks on all files
+#   make dev                 # install editable w/ extras
+#   make lint type test      # static checks + tests
+#   make build               # sdist/wheel
+#   make cli-list            # show discovered CLI strategies
+#   make chunk index query compose  # quick CLI pipeline
+#   make examples            # run python examples
 
-# ---- Config ---------------------------------------------------------------
+# ---- Config -----------------------------------------------------------------
 
 PY ?= python3
 PKG := flowfoundry
 
-# Install extras for local dev. Override if you want fewer extras:
-#   make dev EXTRAS="dev"
-EXTRAS ?= dev,rag,rerank,qdrant
+# Install extras for local dev (override: make dev EXTRAS="dev")
+EXTRAS ?= dev,rag,rerank,openai,llm-openai
 
-# Default query for the rag-local example
-QUERY ?= "Summarize the economic growth."
+# Demo index settings
+INDEX_PATH ?= .ff_chroma
+COLLECTION ?= docs
+DOCS_DIR   ?= docs/samples
+QUESTION   ?= What is people's budget?
 
-# ---- Helpers --------------------------------------------------------------
+# ---- Helpers ----------------------------------------------------------------
 
 .PHONY: help
 help: ## Show this help
 	@awk 'BEGIN {FS":.*##"; printf "\n\033[1mTargets\033[0m\n"} /^[a-zA-Z0-9_.-]+:.*?##/ {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST); \
 	echo ""
 
-# ---- Environment / Install ------------------------------------------------
+# ---- Environment / Install ---------------------------------------------------
 
 .PHONY: install
 install: ## Install core (editable)
 	$(PY) -m pip install -e .
 
 .PHONY: dev
-dev: ## Install editable with dev + provider extras (EXTRAS="$(EXTRAS)")
+dev: ## Install editable with extras (EXTRAS="$(EXTRAS)")
 	$(PY) -m pip install -e ".[$(EXTRAS)]"
 
 .PHONY: precommit-install
-precommit-install: ## Install pre-commit hooks
+precommit-install: ## Install & enable pre-commit hooks
 	$(PY) -m pip install pre-commit
 	pre-commit install
 
@@ -46,7 +48,7 @@ precommit-install: ## Install pre-commit hooks
 precommit: ## Run all pre-commit hooks on all files
 	pre-commit run -a
 
-# ---- Tests ----------------------------------------------------------------
+# ---- Test ------------------------------------------------------
 
 .PHONY: test
 test: ## Run tests
@@ -54,12 +56,12 @@ test: ## Run tests
 
 .PHONY: test-cov
 test-cov: ## Run tests with coverage
-	pytest --cov=$(PKG) -q
+	pytest --cov=$(PKG) --cov-report=term-missing -q
 
-# ---- Build / Clean --------------------------------------------------------
+# ---- Build / Clean -----------------------------------------------------------
 
 .PHONY: build
-build: ## Build wheel and sdist
+build: ## Build wheel + sdist
 	$(PY) -m pip install --upgrade build
 	$(PY) -m build
 
@@ -70,29 +72,11 @@ clean: ## Remove caches and build artifacts
 	  __pycache__ */__pycache__ src/**/__pycache__ \
 	  .coverage htmlcov \
 	  build dist *.egg-info \
-	  .ff_chroma
+	  $(INDEX_PATH)
 
-# ---- CLI / API ------------------------------------------------------------
+# ---- CLI convenience (auto-discovered commands) ------------------------------
 
-.PHONY: serve
-serve: ## Start local FastAPI server (uvicorn)
-	$(PY) -m flowfoundry.cli serve
+.PHONY: cli-list
+cli-list: ## List discovered families/strategies
+	flowfoundry list
 
-.PHONY: schema
-schema: ## Write workflow JSON Schema to schema.json
-	$(PY) -m flowfoundry.cli schema schema.json
-	@echo "Wrote schema.json"
-
-# ---- Examples -------------------------------------------------------------
-
-.PHONY: ingest
-ingest: ## Run examples/ingestion.yaml to index docs/sample.pdf
-	$(PY) -m flowfoundry.cli run examples/ingestion.yaml
-
-.PHONY: rag-local
-rag-local: ## Run examples/rag_local.yaml with QUERY (override with: make rag-local QUERY="...")
-	$(PY) -m flowfoundry.cli run examples/rag_local.yaml --state '{"query": $(QUERY)}'
-
-.PHONY: rag-agentic
-rag-agentic: ## Run examples/rag_agentic.yaml with QUERY
-	$(PY) -m flowfoundry.cli run examples/rag_agentic.yaml --state '{"query": $(QUERY)}'
