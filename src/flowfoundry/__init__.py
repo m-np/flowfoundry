@@ -1,8 +1,4 @@
-from .utils import (
-    ping,
-    hello,
-    __version__,
-)
+from .utils import ping, hello, __version__, load_plugins
 
 from .functional import (
     chunk_fixed,
@@ -20,6 +16,7 @@ from .functional import (
 from .model import HFProvider, OpenAIProvider, OllamaProvider, LangChainProvider
 
 from .plans import run_plan, run_plan_file, run_yaml_file
+
 
 __all__ = [
     "__version__",
@@ -42,6 +39,7 @@ __all__ = [
     # utils
     "ping",
     "hello",
+    "load_plugins",
     # plans
     "run_plan",
     "run_plan_file",

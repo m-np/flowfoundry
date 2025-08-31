@@ -2,15 +2,14 @@ from __future__ import annotations
 from typing import Any, Dict, Mapping, cast
 import sys
 
-# External YAML parser (PyYAML)
 try:
-    import yaml
+    import yaml  # PyYAML
 except Exception:
     print("Please `pip install pyyaml` to use plan YAMLs.", file=sys.stderr)
     raise
 
-# Reuse global functional registry (same object CLI uses)
-from ..utils import strategies  # StrategyRegistries
+from ..utils.functional_registry import strategies
+from ..utils.plugin_loader import load_plugins  # ← NEW
 
 
 class _Ctx:
@@ -83,23 +82,21 @@ def _resolve(obj: Any, ctx: _Ctx) -> Any:
 
 
 def run_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Execute a FlowFoundry plan:
-      version: 1
-      vars: {...}
-      steps: [{id, use, with}, ...]
-      outputs: {...}
-    """
     version = plan.get("version", 1)
     if version != 1:
         raise ValueError(f"Unsupported plan version: {version}")
+
+    # NEW: optional top-level plugins
+    plugin_paths = plan.get("plugins", [])
+    if isinstance(plugin_paths, list) and plugin_paths:
+        load_plugins(plugin_paths, export_to_functional=True)
 
     ctx = _Ctx(vars=plan.get("vars", {}))
     steps = plan.get("steps", [])
     if not steps or not isinstance(steps, list):
         raise ValueError("Plan must include non-empty 'steps'")
 
-    reg = strategies  # StrategyRegistries (families -> {name: fn})
+    reg = strategies
 
     for s in steps:
         sid = s.get("id")
@@ -111,7 +108,6 @@ def run_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
 
         kw = _resolve(kwargs, ctx)
 
-        # Resolve callable: allow "family.name" or bare "name"
         fn = None
         if "." in use:
             family, name = use.split(".", 1)
@@ -141,5 +137,5 @@ def run_plan_file(path: str) -> Dict[str, Any]:
     return run_plan(load_plan_file(path))
 
 
-# Backwards-compat alias for older CLI/imports that expect "run_yaml_file"
+# Back-compat alias
 run_yaml_file = run_plan_file
