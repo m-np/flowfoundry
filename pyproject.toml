@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flowfoundry"
-version = "1.1.1"
+version = "1.2.0"
 description = "FlowFoundry: a strategy-first, cloud-agnostic agentic workflow framework (LangGraph/LangChain)"
 readme = "README-pypi.md"
 requires-python = ">=3.10"

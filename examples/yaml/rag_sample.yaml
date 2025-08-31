@@ -4,7 +4,7 @@ vars:
   data_path: docs/samples/                   
   store_path: .ff_chroma2
   collection: docs
-  question: "Summarize the pdfs"
+  question: "What is People's budget?"
 
 steps:
   # 1) Load PDFs (your existing strategy)

@@ -288,5 +288,63 @@ Run:
 ```bash
 pip install "flowfoundry[rag,rerank,openai,llm-openai]"
 export OPENAI_API_KEY=...
-flowfoundry run rag_samples.yaml
+flowfoundry run rag_sample.yaml -V question="Summarize the PDFs"
+```
+
+## Custom Logic
+
+Create a file anywhere (e.g., examples/external_plugins/pdf_loader_openai.py):
+
+```python
+# examples/external_plugins/pdf_loader_openai.py
+from __future__ import annotations
+from pathlib import Path
+from typing import Dict, List, Union
+from flowfoundry.utils import register_strategy, FFIngestionError
+
+@register_strategy("ingestion", "pdf_loader_openai")
+def pdf_loader_openai(path: Union[str, Path]) -> List[Dict]:
+    """
+    Return page dicts compatible with FlowFoundry indexing:
+      {"source": str, "page": int, "text": str}
+    """
+    p = Path(path)
+    if not p.exists():
+        raise FFIngestionError(f"Path not found: {p}")
+    pdfs = [p] if (p.is_file() and p.suffix.lower()==".pdf") else list(p.rglob("*.pdf"))
+    if not pdfs:
+        raise FFIngestionError(f"No PDFs under {p}")
+
+    # Replace with your own logic. This stub just makes empty pages:
+    return [{"source": str(pdf.resolve()), "page": 1, "text": f"stub text for {pdf.name}"} for pdf in pdfs]
+
+# Optional: bind this function into `flowfoundry.functional` for ergonomic imports
+FF_EXPORTS = [
+    ("ingestion", "pdf_loader_openai", "pdf_loader_openai"),
+    # You can also add a convenience alias:
+    # ("ingestion", "pdf_loader_openai", "pdf_loader"),
+]
+```
+
+Use it from Python
+
+```python
+from flowfoundry.utils.plugin_loader import load_plugins
+from flowfoundry.utils.functional_registry import strategies
+
+# 1) Load your file(s) so decorators run (and optional FF_EXPORTS bind)
+load_plugins(["examples/external_plugins/pdf_loader_openai.py"], export_to_functional=True)
+
+# 2) Grab it by registry name (robust)
+pdf_loader = strategies.get("ingestion", "pdf_loader_openai")
+pages = pdf_loader("docs/samples")
+
+# 3) Continue with the Functional API
+from flowfoundry.functional import chunk_recursive, index_chroma_upsert
+chunks = []
+for pg in pages:
+    for ch in chunk_recursive(pg["text"], chunk_size=500, chunk_overlap=50, doc_id="demo"):
+        ch["meta"] = {"source": pg["source"], "page": pg["page"]}
+        chunks.append(ch)
+index_chroma_upsert(chunks, path=".ff_chroma", collection="docs")
 ```
