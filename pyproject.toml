@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flowfoundry"
-version = "1.1.0"
+version = "1.2.0"
 description = "FlowFoundry: a strategy-first, cloud-agnostic agentic workflow framework (LangGraph/LangChain)"
 readme = "README-pypi.md"
 requires-python = ">=3.10"
@@ -53,7 +53,7 @@ dev = [
 
 [project.scripts]
 # (optional) keep a tiny CLI that only calls functional APIs
-flowfoundry = "flowfoundry.cli:app"
+flowfoundry = "flowfoundry.cli:main"
 
 # ——— REMOVED: all [project.entry-points."flowfoundry.*"] blocks ———
 

@@ -8,11 +8,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -28,15 +27,35 @@ jobs:
           python -m pip install -U pip build twine
           python -m build
           ls -l dist
+          python -m twine check dist/*
 
-      - name: Sanity install wheel
-        shell: bash -l {0}
-        run: |
-          pip install --no-index --find-links dist flowfoundry
-          python -c "import flowfoundry as ff; print(ff.__version__, ff.ping())"
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.10.1
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          user: __token__
+          name: pypi-dist
+          path: dist/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi-dist
+          path: dist
+      - name: Sanity check dist
+        run: |
+          ls -R
+          test -n "$(ls -A dist)" || { echo "❌ No files in dist/"; exit 1; }
+      - name: Publish to PyPI (token or OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: dist
+          skip-existing: true
+          print-hash: true
+          verify-metadata: true

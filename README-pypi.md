@@ -143,7 +143,7 @@ compose_llm(
 ) -> str
 ```
 
-Example Code:
+## Example Code:
 ```python
 from flowfoundry import index_chroma_query, preselect_bm25, compose_llm
 
@@ -201,4 +201,150 @@ Step 3: compose answer with OpenAI
 export OPENAI_API_KEY=...
 flowfoundry compose llm \
   --kwargs "{\"question\":\"What is people's budget?\",\"hits\":$(cat hits_top5.json),\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"max_tokens\":400}"
-```1
+```
+
+## YAML based run
+
+Planned Schema:
+```yaml
+version: 1
+vars:        # optional globals you can reference later
+  key: value
+steps:       # ordered list of steps
+  - id: step_name
+    use: family.function_name      # e.g., chunking.chunk_recursive
+    with:                          # kwargs passed to that function
+      param1: foo
+      param2: ${{ vars.key }}      # reference vars or prior steps
+outputs:     # optional; what to print at the end
+  result: ${{ step_name }}
+```
+
+Example 1 — Minimal RAG (inline text)
+```yaml
+version: 1
+
+vars:
+  data_path: docs/samples/                   
+  store_path: .ff_chroma2
+  collection: docs
+  question: "Summarize the pdfs"
+
+steps:
+  # 1) Load PDFs (your existing strategy)
+  - id: pages
+    use: ingestion.pdf_loader
+    with:
+      path: ${{ vars.data_path }}
+
+  # 2) Chunk every page, preserving source/page metadata
+  - id: chunks
+    use: chunking.recursive
+    with:
+      data: ${{ pages }}
+      chunk_size: 800
+      chunk_overlap: 120
+
+  # 3) Upsert chunks into Chroma
+  - id: upsert
+    use: indexing.chroma_upsert
+    with:
+      chunks: ${{ chunks }}
+      path: ${{ vars.store_path }}
+      collection: ${{ vars.collection }}
+
+  # 4) Retrieve relevant chunks
+  - id: retrieve
+    use: indexing.chroma_query
+    with:
+      query: ${{ vars.question }}
+      path: ${{ vars.store_path }}
+      collection: ${{ vars.collection }}
+      k: 12
+
+  # 5) (Optional) BM25 preselect
+  - id: preselect
+    use: rerank.bm25_preselect
+    with:
+      query: ${{ vars.question }}
+      hits: ${{ retrieve }}
+      top_k: 6
+
+  # 6) Compose final answer (pick your provider)
+  - id: answer
+    use: compose.llm
+    with:
+      question: ${{ vars.question }}
+      hits: ${{ preselect }}
+      provider: openai               # or "ollama" / "huggingface"
+      model: gpt-4o-mini
+      max_tokens: 400
+
+outputs:
+  final_answer: ${{ answer }}
+```
+
+Run:
+```bash
+pip install "flowfoundry[rag,rerank,openai,llm-openai]"
+export OPENAI_API_KEY=...
+flowfoundry run rag_sample.yaml -V question="Summarize the PDFs"
+```
+
+## Custom Logic
+
+Create a file anywhere (e.g., examples/external_plugins/pdf_loader_openai.py):
+
+```python
+# examples/external_plugins/pdf_loader_openai.py
+from __future__ import annotations
+from pathlib import Path
+from typing import Dict, List, Union
+from flowfoundry.utils import register_strategy, FFIngestionError
+
+@register_strategy("ingestion", "pdf_loader_openai")
+def pdf_loader_openai(path: Union[str, Path]) -> List[Dict]:
+    """
+    Return page dicts compatible with FlowFoundry indexing:
+      {"source": str, "page": int, "text": str}
+    """
+    p = Path(path)
+    if not p.exists():
+        raise FFIngestionError(f"Path not found: {p}")
+    pdfs = [p] if (p.is_file() and p.suffix.lower()==".pdf") else list(p.rglob("*.pdf"))
+    if not pdfs:
+        raise FFIngestionError(f"No PDFs under {p}")
+
+    # Replace with your own logic. This stub just makes empty pages:
+    return [{"source": str(pdf.resolve()), "page": 1, "text": f"stub text for {pdf.name}"} for pdf in pdfs]
+
+# Optional: bind this function into `flowfoundry.functional` for ergonomic imports
+FF_EXPORTS = [
+    ("ingestion", "pdf_loader_openai", "pdf_loader_openai"),
+    # You can also add a convenience alias:
+    # ("ingestion", "pdf_loader_openai", "pdf_loader"),
+]
+```
+
+Use it from Python
+
+```python
+from flowfoundry.utils.plugin_loader import load_plugins
+from flowfoundry.utils.functional_registry import strategies
+
+# 1) Load your file(s) so decorators run (and optional FF_EXPORTS bind)
+load_plugins(["examples/external_plugins/pdf_loader_openai.py"], export_to_functional=True)
+
+# 2) Grab it by registry name (robust)
+pdf_loader = strategies.get("ingestion", "pdf_loader_openai")
+pages = pdf_loader("docs/samples")
+
+# 3) Continue with the Functional API
+from flowfoundry.functional import chunk_recursive, index_chroma_upsert
+chunks = []
+for pg in pages:
+    for ch in chunk_recursive(pg["text"], chunk_size=500, chunk_overlap=50, doc_id="demo"):
+        ch["meta"] = {"source": pg["source"], "page": pg["page"]}
+        chunks.append(ch)
+index_chroma_upsert(chunks, path=".ff_chroma", collection="docs")
+```

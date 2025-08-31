@@ -45,6 +45,7 @@ from .llm_contracts import (
 
 from .versions import __version__
 
+from .plugin_loader import load_plugins
 
 # ---------------------------------------------------------------------------
 # Convenience helpers
@@ -95,4 +96,6 @@ __all__ = [
     # Helpers
     "ping",
     "hello",
+    # Plugin Loader
+    "load_plugins",
 ]

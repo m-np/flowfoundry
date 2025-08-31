@@ -1,0 +1,60 @@
+version: 1
+
+vars:
+  data_path: docs/samples/                   
+  store_path: .ff_chroma2
+  collection: docs
+  question: "What is People's budget?"
+
+steps:
+  # 1) Load PDFs (your existing strategy)
+  - id: pages
+    use: ingestion.pdf_loader
+    with:
+      path: ${{ vars.data_path }}
+
+  # 2) Chunk every page, preserving source/page metadata
+  - id: chunks
+    use: chunking.recursive
+    with:
+      data: ${{ pages }}
+      chunk_size: 800
+      chunk_overlap: 120
+
+  # 3) Upsert chunks into Chroma
+  - id: upsert
+    use: indexing.chroma_upsert
+    with:
+      chunks: ${{ chunks }}
+      path: ${{ vars.store_path }}
+      collection: ${{ vars.collection }}
+
+  # 4) Retrieve relevant chunks
+  - id: retrieve
+    use: indexing.chroma_query
+    with:
+      query: ${{ vars.question }}
+      path: ${{ vars.store_path }}
+      collection: ${{ vars.collection }}
+      k: 12
+
+  # 5) (Optional) BM25 preselect
+  - id: preselect
+    use: rerank.bm25_preselect
+    with:
+      query: ${{ vars.question }}
+      hits: ${{ retrieve }}
+      top_k: 6
+
+  # 6) Compose final answer (pick your provider)
+  - id: answer
+    use: compose.llm
+    with:
+      question: ${{ vars.question }}
+      hits: ${{ preselect }}
+      provider: openai               # or "ollama" / "huggingface"
+      model: gpt-4o-mini
+      max_tokens: 400
+
+outputs:
+  final_answer: ${{ answer }}
