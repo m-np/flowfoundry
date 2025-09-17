@@ -23,10 +23,16 @@ Core only:
 pip install flowfoundry
 ```
 
-With extras:
+GPU (CUDA 12.1):
 ```bash
-pip install "flowfoundry[rag,search,rerank,qdrant,openai,llm-openai]"
+pip install --upgrade "flowfoundry[local-gpu-cu121]" --index-url https://download.pytorch.org/whl/cu121
 ```
+
+GPU (CUDA 12.4):
+```bash
+pip install --upgrade "flowfoundry[local-gpu-cu124]" --index-url https://download.pytorch.
+```
+
 
 Extras include: chromadb, qdrant-client, sentence-transformers, rank-bm25, openai, etc.
 All examples run offline by default (echo LLM). Missing deps no-op gracefully.

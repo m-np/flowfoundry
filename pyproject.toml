@@ -21,7 +21,8 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-# Core deps kept lean; providers live in extras
+# Default install is CPU-friendly and includes torch CPU wheels from PyPI.
+# (GPU users should use the GPU extras below with the appropriate --index-url.)
 dependencies = [
   "pydantic>=2.7",
   "pyyaml>=6.0",
@@ -33,29 +34,73 @@ dependencies = [
   "langgraph>=0.2",
   "pypdf>=4.2",
   "langchain-ollama>=0.1.20",
+
+  # core local-LLM stack (CPU by default)
+  "torch>=2.4,<3",
+  "torchvision>=0.19,<1",
+  "transformers>=4.44",
   "accelerate>=1.10.1",
+  "sentence-transformers>=3.0",
   "sentencepiece>=0.2.1"
 ]
 
 [project.optional-dependencies]
-# ...existing extras...
+# Cloud/OpenAI-only stacks (no need for torch if you don't use local models):
 openai = ["openai>=1.40", "langchain-openai>=0.1.20"]
 llm-openai = ["langchain-openai>=0.1.20"]
+
+# Vector DB / RAG helpers
 rag = ["chromadb>=0.5", "sentence-transformers>=3.0"]
+
+# Search providers
 search = ["duckduckgo-search>=5.3", "tavily-python>=0.3"]
+
+# Rerank options
 rerank = ["rank-bm25>=0.2", "sentence-transformers>=3.0"]
+
+# Qdrant client
 qdrant = ["qdrant-client>=1.9"]
+
+# Simple API server extras
 api = ["fastapi>=0.111", "uvicorn>=0.30"]
+
+# Developer tooling
 dev = [
   "pytest>=8.2", "pytest-cov>=5.0", "mypy>=1.11", "ruff>=0.5", "black>=24.8",
   "types-PyYAML>=6.0.12.20240808", "build>=1.2", "twine>=5.1",
 ]
 
+# ---------- GPU variants (choose ONE + set the official PyTorch index URL) ----------
+# Example CUDA 12.1:
+#   pip install --upgrade "flowfoundry[local-gpu-cu121]" --index-url https://download.pytorch.org/whl/cu121
+# Example CUDA 12.4:
+#   pip install --upgrade "flowfoundry[local-gpu-cu124]" --index-url https://download.pytorch.org/whl/cu124
+#
+# These extras mirror the base pins; using the PyTorch index ensures torch/torchvision
+# are reinstalled as CUDA wheels for your platform.
+local-gpu-cu121 = [
+  "torch>=2.4,<3",
+  "torchvision>=0.19,<1",
+  "transformers>=4.44",
+  "accelerate>=1.10",
+  "sentence-transformers>=3.0"
+]
+
+local-gpu-cu124 = [
+  "torch>=2.4,<3",
+  "torchvision>=0.19,<1",
+  "transformers>=4.44",
+  "accelerate>=1.10",
+  "sentence-transformers>=3.0"
+]
+
+# Optional alias for users who prefer an explicit CPU/MPS extra; it's identical to default.
+local-cpu = []
+
 [project.scripts]
-# (optional) keep a tiny CLI that only calls functional APIs
 flowfoundry = "flowfoundry.cli:main"
 
-# ——— REMOVED: all [project.entry-points."flowfoundry.*"] blocks ———
+# ——— keep entry points empty here; discovery is handled by runtime auto-loading ———
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -84,12 +129,12 @@ strict_optional = true
 module = [
   "fastapi", "fastapi.responses", "uvicorn", "typer",
   "langgraph.*", "langchain.*", "langchain_community.*",
-  "langchain_openai", "langchain_ollama",    
+  "langchain_openai", "langchain_ollama",
   "openai", "langchain_text_splitters",
   "pypdf", "chromadb",
   "qdrant_client", "qdrant_client.http.models",
-  "sentence_transformers", "transformers",   
-  "rank_bm25", "requests", "pytest"                   
+  "sentence_transformers", "transformers",
+  "rank_bm25", "requests", "pytest"
 ]
 ignore_missing_imports = true
 
