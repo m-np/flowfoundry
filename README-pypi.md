@@ -23,10 +23,16 @@ Core only:
 pip install flowfoundry
 ```
 
-With extras:
+GPU (CUDA 12.1):
 ```bash
-pip install "flowfoundry[rag,search,rerank,qdrant,openai,llm-openai]"
+pip install --upgrade "flowfoundry[local-gpu-cu121]" --index-url https://download.pytorch.org/whl/cu121
 ```
+
+GPU (CUDA 12.4):
+```bash
+pip install --upgrade "flowfoundry[local-gpu-cu124]" --index-url https://download.pytorch.
+```
+
 
 Extras include: chromadb, qdrant-client, sentence-transformers, rank-bm25, openai, etc.
 All examples run offline by default (echo LLM). Missing deps no-op gracefully.
@@ -293,58 +299,72 @@ flowfoundry run rag_sample.yaml -V question="Summarize the PDFs"
 
 ## Custom Logic
 
-Create a file anywhere (e.g., examples/external_plugins/pdf_loader_openai.py):
+Autoregistration & Plugin Discovery
+
+FlowFoundry now auto-discovers and registers custom strategies at import time—no manual imports, no per-repo bootstrap, and no entry points required.
+
+TL;DR
+
+Put your custom code in a folder named flowfoundry_plugin/ or flowfoundry_plugins/ (either name works).
+
+Decorate your functions with @register_strategy(<family>, <name>).
+
+Install your code (optional) or just run from the repo root.
+
+import flowfoundry → your strategies are available.
+
+Families recognized: ingestion, chunking, indexing, rerank, compose.
+
 
 ```python
-# examples/external_plugins/pdf_loader_openai.py
-from __future__ import annotations
-from pathlib import Path
-from typing import Dict, List, Union
-from flowfoundry.utils import register_strategy, FFIngestionError
+# flowfoundry_plugin/my_chunker.py
+from flowfoundry.utils.functional_registry import register_strategy
 
-@register_strategy("ingestion", "pdf_loader_openai")
-def pdf_loader_openai(path: Union[str, Path]) -> List[Dict]:
-    """
-    Return page dicts compatible with FlowFoundry indexing:
-      {"source": str, "page": int, "text": str}
-    """
-    p = Path(path)
-    if not p.exists():
-        raise FFIngestionError(f"Path not found: {p}")
-    pdfs = [p] if (p.is_file() and p.suffix.lower()==".pdf") else list(p.rglob("*.pdf"))
-    if not pdfs:
-        raise FFIngestionError(f"No PDFs under {p}")
-
-    # Replace with your own logic. This stub just makes empty pages:
-    return [{"source": str(pdf.resolve()), "page": 1, "text": f"stub text for {pdf.name}"} for pdf in pdfs]
-
-# Optional: bind this function into `flowfoundry.functional` for ergonomic imports
-FF_EXPORTS = [
-    ("ingestion", "pdf_loader_openai", "pdf_loader_openai"),
-    # You can also add a convenience alias:
-    # ("ingestion", "pdf_loader_openai", "pdf_loader"),
-]
+@register_strategy("chunking", "my_chunker")
+def my_chunker(data: str, *, size: int = 400):
+    parts = [data[i:i+size] for i in range(0, len(data), size)]
+    out, off = [], 0
+    for k, p in enumerate(parts):
+        out.append({"doc":"doc","text":p,"start":off,"end":off+len(p),"chunk_index":k})
+        off += len(p)
+    return out
 ```
 
 Use it from Python
 
 ```python
-from flowfoundry.utils.plugin_loader import load_plugins
+import flowfoundry  # triggers auto-discovery
+
 from flowfoundry.utils.functional_registry import strategies
+fn = strategies.get("chunking", "my_chunker")
+chunks = fn("hello world " * 50, size=20)
+print(chunks[0])
+```
 
-# 1) Load your file(s) so decorators run (and optional FF_EXPORTS bind)
-load_plugins(["examples/external_plugins/pdf_loader_openai.py"], export_to_functional=True)
+Supported folder layouts (no pyproject.toml required)
 
-# 2) Grab it by registry name (robust)
-pdf_loader = strategies.get("ingestion", "pdf_loader_openai")
-pages = pdf_loader("docs/samples")
+The autoloader scans the current working directory (and parents), sys.path, and common dev subfolders like src/, for directories named flowfoundry_plugin or flowfoundry_plugins.
 
-# 3) Continue with the Functional API
-from flowfoundry.functional import chunk_recursive, index_chroma_upsert
-chunks = []
-for pg in pages:
-    for ch in chunk_recursive(pg["text"], chunk_size=500, chunk_overlap=50, doc_id="demo"):
-        ch["meta"] = {"source": pg["source"], "page": pg["page"]}
-        chunks.append(ch)
-index_chroma_upsert(chunks, path=".ff_chroma", collection="docs")
+All of these work out of the box:
+
+```bash
+repo-root/
+├─ flowfoundry_plugin/
+│  └─ my_chunker.py
+└─ test_autoload.py
+```
+
+```bash
+repo-root/
+├─ src/
+│  └─ flowfoundry_plugin/
+│     └─ my_chunker.py
+└─ src/test_autoload.py
+```
+```bash
+repo-root/
+├─ src/
+│  └─ flowfoundry_plugin/
+│     └─ my_chunker.py
+└─ tests/smoke/test_autoload.py
 ```
